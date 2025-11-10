@@ -1,0 +1,351 @@
+#!/usr/bin/env python3
+"""
+Generate HTML collection pages under collections/ for each album folder under photos/.
+
+Each generated page:
+- Uses the shared styles and header
+- Loads its album image list from photos/<album>/index.json (with JS fallback to index.js)
+- Renders a responsive justified grid with lightbox (same as hand-written pages)
+
+Usage:
+  python3 tool/generate_collections.py
+  python3 tool/generate_collections.py --root photos --out collections --dry-run
+  python3 tool/generate_collections.py --recursive
+"""
+from __future__ import annotations
+
+import argparse
+import re
+from datetime import datetime
+from pathlib import Path
+from typing import Tuple
+
+
+def parse_album_name(album: str) -> Tuple[str, str]:
+    """
+    Parse an album folder name like '20250815_banff' -> ('Banff', '2025.08.15')
+    If the pattern doesn't match, return ('Album', album).
+    """
+    m = re.match(r"^(\d{4})(\d{2})(\d{2})[_-](.+)$", album)
+    if not m:
+        # Fallback: just title-case the folder name
+        title = album.replace("_", " ").replace("-", " ").strip().title()
+        return title, album
+    y, mo, d, rest = m.groups()
+    try:
+        dt = datetime(int(y), int(mo), int(d))
+        date_str = dt.strftime("%Y.%m.%d")
+    except ValueError:
+        date_str = f"{y}.{mo}.{d}"
+    title = rest.replace("_", " ").replace("-", " ").strip().title()
+    return title, date_str
+
+
+TEMPLATE = """<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{page_title}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@200;300;400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles.css">
+    <meta name="description" content="{album_title} — photo collection by Chuanbo Hua">
+  </head>
+  <body>
+    <header class="site-header" role="banner">
+      <div class="container header-container">
+        <a class="site-title" href="../index.html">Chuanbo Hua</a>
+        <nav class="site-nav" aria-label="Primary navigation">
+          <a class="nav-link" href="../index.html">Home</a>
+          <a class="nav-link" href="../about.html">About</a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="content" class="site-main" role="main">
+      <div class="container" style="padding: 28px 0 0;">
+        <h1 style="margin: 0 0 12px 0;">{album_title}</h1>
+        <div class="photo-caption" style="margin-top: 0; color: var(--muted);">
+          <div class="date">{album_date}</div>
+        </div>
+      </div>
+
+      <div class="container">
+        <div id="gallery" class="justified"></div>
+      </div>
+    </main>
+
+    <div id="lightbox" class="lightbox" aria-modal="true" role="dialog" aria-label="Image viewer" tabindex="-1">
+      <span class="close" id="lb-close" aria-label="Close">×</span>
+      <span class="nav prev" id="lb-prev" aria-label="Previous">‹</span>
+      <img id="lb-image" alt="">
+      <span class="nav next" id="lb-next" aria-label="Next">›</span>
+    </div>
+
+    <footer class="site-footer" role="contentinfo">
+      <div class="container">
+        <p>© <span id="year"></span> Chuanbo Hua</p>
+      </div>
+    </footer>
+
+    <script>
+      document.getElementById('year').textContent = new Date().getFullYear();
+      (function () {{
+        var header = document.querySelector('.site-header');
+        if (!header) return;
+        var lastY = window.scrollY || 0;
+        var ticking = false;
+        function onScroll() {{
+          var currentY = window.scrollY || 0;
+          var goingDown = currentY > lastY;
+          var pastTop = currentY > 16;
+          if (goingDown && pastTop) {{
+            header.classList.add('hidden');
+          }} else {{
+            header.classList.remove('hidden');
+          }}
+          lastY = currentY;
+          ticking = false;
+        }}
+        window.addEventListener('scroll', function () {{
+          if (!ticking) {{
+            window.requestAnimationFrame(onScroll);
+            ticking = true;
+          }}
+        }}, {{ passive: true }});
+      }})();
+    </script>
+
+    <script>
+      (function () {{
+        var base = "../photos/{album}/";
+        var files = [];
+        var container = document.getElementById('gallery');
+        var lightbox = document.getElementById('lightbox');
+        var lbImg = document.getElementById('lb-image');
+        var lbClose = document.getElementById('lb-close');
+        var lbPrev = document.getElementById('lb-prev');
+        var lbNext = document.getElementById('lb-next');
+        var current = 0;
+
+        function openAt(idx) {{
+          current = idx;
+          lbImg.src = base + files[current];
+          lbImg.alt = files[current];
+          lightbox.classList.add('open');
+          document.body.style.overflow = 'hidden';
+        }}
+        function close() {{
+          lightbox.classList.remove('open');
+          document.body.style.overflow = '';
+        }}
+        function prev() {{ openAt((current - 1 + files.length) % files.length); }}
+        function next() {{ openAt((current + 1) % files.length); }}
+
+        function buildGallery(list) {{
+          files = list.slice();
+          var metas = [];
+          var loaded = 0;
+          list.forEach(function (name, i) {{
+            var img = new Image();
+            img.onload = function () {{
+              metas[i] = {{ src: base + name, ratio: img.naturalWidth / img.naturalHeight }};
+              loaded++;
+              if (loaded === list.length) {{
+                layout(metas);
+              }}
+            }};
+            img.src = base + name;
+          }});
+          window.addEventListener('resize', debounce(function () {{ layout(metas); }}, 150));
+        }}
+
+        function layout(metas) {{
+          container.innerHTML = "";
+          var width = container.clientWidth;
+          var gap = 16;
+          var target = width >= 1024 ? 320 : (width >= 640 ? 240 : 160);
+          if (width <= 760) {{
+            metas.forEach(function (m, i) {{
+              var rowEl = document.createElement('div');
+              rowEl.className = 'justified-row';
+              var a = document.createElement('a');
+              a.href = m.src;
+              a.className = 'justified-item';
+              a.style.width = '100%';
+              a.style.height = 'auto';
+              (function (index) {{
+                a.addEventListener('click', function (e) {{
+                  e.preventDefault();
+                  openAt(index);
+                }});
+              }})(i);
+              var im = document.createElement('img');
+              im.loading = 'lazy';
+              im.src = m.src;
+              im.alt = 'Photo ' + (i + 1);
+              a.appendChild(im);
+              rowEl.appendChild(a);
+              container.appendChild(rowEl);
+            }});
+            return;
+          }}
+          var row = [];
+          var sum = 0;
+          function flushRow(final) {{
+            if (row.length === 0) return;
+            var rowGaps = gap * (row.length - 1);
+            var h = (width - rowGaps) / sum;
+            if (!final) {{
+              var minH = target * 0.85;
+              var maxH = target * 1.25;
+              if (h < minH) h = minH;
+              if (h > maxH) h = maxH;
+            }}
+            var rowEl = document.createElement('div');
+            rowEl.className = 'justified-row';
+            row.forEach(function (m, idx) {{
+              var w = Math.round(h * m.ratio);
+              var a = document.createElement('a');
+              a.href = m.src;
+              a.className = 'justified-item';
+              a.style.width = w + 'px';
+              a.style.height = Math.round(h) + 'px';
+              (function (index) {{
+                a.addEventListener('click', function (e) {{
+                  e.preventDefault();
+                  openAt(index);
+                }});
+              }})(m.index);
+              var im = document.createElement('img');
+              im.loading = 'lazy';
+              im.src = m.src;
+              im.alt = 'Photo ' + (m.index + 1);
+              a.appendChild(im);
+              rowEl.appendChild(a);
+            }});
+            container.appendChild(rowEl);
+            row = [];
+            sum = 0;
+          }}
+          metas.forEach(function (m, i) {{
+            m.index = i;
+            row.push(m);
+            sum += m.ratio;
+            var rowGaps = gap * (row.length - 1);
+            var h = (width - rowGaps) / sum;
+            if (h < target) {{
+              flushRow(false);
+            }}
+          }});
+          flushRow(true);
+        }}
+
+        function debounce(fn, ms) {{
+          var t;
+          return function () {{
+            clearTimeout(t);
+            t = setTimeout(fn, ms);
+          }};
+        }}
+
+        // Try JSON first; fallback to JS if blocked
+        fetch(base + "index.json?ts=" + Date.now())
+          .then(function (res) {{
+            if (!res.ok) throw new Error("index.json not found");
+            return res.json();
+          }})
+          .then(function (list) {{
+            if (!Array.isArray(list) || list.length === 0) throw new Error("index.json is empty");
+            buildGallery(list);
+          }})
+          .catch(function (err) {{
+            console.warn("JSON fetch failed, trying JS fallback:", err);
+            var s = document.createElement('script');
+            s.src = base + "index.js?ts=" + Date.now();
+            s.onload = function () {{
+              if (Array.isArray(window.ALBUM_FILES) && window.ALBUM_FILES.length) {{
+                var list = window.ALBUM_FILES.slice();
+                try {{ delete window.ALBUM_FILES; }} catch (_) {{ window.ALBUM_FILES = undefined; }}
+                buildGallery(list);
+              }} else {{
+                container.innerHTML = '<p style="color:#c8c8c8">Unable to load photo index for this album.</p>';
+              }}
+            }};
+            s.onerror = function () {{
+              container.innerHTML = '<p style="color:#c8c8c8">Unable to load photo index for this album.</p>';
+            }};
+            document.head.appendChild(s);
+          }});
+
+        lightbox.addEventListener('click', function (e) {{
+          if (e.target === lightbox) close();
+        }});
+        lbClose.addEventListener('click', close);
+        lbPrev.addEventListener('click', function (e) {{ e.stopPropagation(); prev(); }});
+        lbNext.addEventListener('click', function (e) {{ e.stopPropagation(); next(); }});
+        document.addEventListener('keydown', function (e) {{
+          if (!lightbox.classList.contains('open')) return;
+          if (e.key === 'Escape') close();
+          if (e.key === 'ArrowLeft') prev();
+          if (e.key === 'ArrowRight') next();
+        }});
+      }})();
+    </script>
+  </body>
+  </html>
+"""
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Generate collection HTML pages for each album in photos/")
+    parser.add_argument("--root", default="photos", type=str, help="Photos root directory")
+    parser.add_argument("--out", default="collections", type=str, help="Output directory for generated html files")
+    parser.add_argument("--recursive", action="store_true", help="Recurse into nested album folders")
+    parser.add_argument("--dry-run", action="store_true", help="Preview without writing files")
+    args = parser.parse_args()
+
+    photos_root = Path(args.root).resolve()
+    out_dir = Path(args.out).resolve()
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    albums = []
+    if args.recursive:
+        for p in photos_root.rglob("*"):
+            if p.is_dir():
+                albums.append(p.relative_to(photos_root).as_posix())
+    else:
+        for p in photos_root.iterdir():
+            if p.is_dir():
+                albums.append(p.name)
+
+    count = 0
+    for album in sorted(albums):
+        # Skip helper dirs
+        if album.startswith("."):
+            continue
+        album_path = photos_root / album
+        if not any(album_path.glob("*.*")):
+            continue
+        title, date_str = parse_album_name(Path(album).name)
+        page_title = f"{title} {date_str}"
+        html = TEMPLATE.format(page_title=page_title, album_title=title, album_date=date_str, album=album)
+        dest = out_dir / f"{Path(album).name}.html"
+        if args.dry_run:
+            print(f"[DRY] Would write {dest}")
+        else:
+            dest.write_text(html, encoding="utf-8")
+            print(f"Wrote {dest}")
+        count += 1
+
+    print(f"Generated {count} collection pages in {out_dir}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+
+

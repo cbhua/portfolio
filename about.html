@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>About — Chuanbo Hua's Portfolio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@200;300;400;500;700;900&amp;display=swap" type="text/css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <meta name="description" content="About Chuanbo Hua">
+  </head>
+  <body>
+    <header class="site-header" role="banner">
+      <div class="container header-container">
+        <a class="site-title" href="index.html">Chuanbo Hua</a>
+        <nav class="site-nav" aria-label="Primary navigation">
+          <a class="nav-link" href="index.html">Home</a>
+          <a class="nav-link active" href="about.html">About</a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="content" class="site-main" role="main">
+      <div class="container" style="padding: 32px 0 56px;">
+        <h1 style="margin-top: 0;">About</h1>
+        <p style="max-width: 70ch; color: #d9d9d9;">
+          Hello, I'm Chuanbo Hua. This site is a minimalist presentation of my photography.
+
+        </p>
+        <p style="max-width: 70ch; color: #c8c8c8; font-style: italic;">
+          "Education does for the mind, experience does for the soul."
+        </p>
+      </div>
+    </main>
+
+    <footer class="site-footer" role="contentinfo">
+      <div class="container">
+        <p>© <span id="year"></span> Chuanbo Hua</p>
+      </div>
+    </footer>
+
+    <script>
+      document.getElementById('year').textContent = new Date().getFullYear();
+      (function () {
+        var header = document.querySelector('.site-header');
+        if (!header) return;
+        var lastY = window.scrollY || 0;
+        var ticking = false;
+        function onScroll() {
+          var currentY = window.scrollY || 0;
+          var goingDown = currentY > lastY;
+          var pastTop = currentY > 16;
+          if (goingDown && pastTop) {
+            header.classList.add('hidden');
+          } else {
+            header.classList.remove('hidden');
+          }
+          lastY = currentY;
+          ticking = false;
+        }
+        window.addEventListener('scroll', function () {
+          if (!ticking) {
+            window.requestAnimationFrame(onScroll);
+            ticking = true;
+          }
+        }, { passive: true });
+      })();
+    </script>
+  </body>
+  </html>
+
+

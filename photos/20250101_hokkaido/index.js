@@ -1,0 +1,1 @@
+window.ALBUM_FILES = ["DSC_1935.jpg", "DSC_2082.JPG", "DSC_2086.JPG", "DSC_2092.jpg", "DSC_2098.jpg", "DSC_2193_1.jpg", "DSC_2480_1.jpg", "DSC_2513_1.jpg", "DSC_2529_1.jpg", "DSC_2557_2.jpg", "DSC_3090.jpg"];

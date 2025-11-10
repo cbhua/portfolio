@@ -1,0 +1,327 @@
+/* Global theme */
+:root {
+  --bg: #0b0b0b;
+  --text: #e7e7e7;
+  --muted: #dedede;
+  --border: #222;
+  --link: #ffffff;
+  --link-muted: #cfcfcf;
+  --shadow: rgba(0, 0, 0, 0.5);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Nanum Myeongjo", serif;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.container {
+  width: min(1200px, 92%);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Header */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(6px);
+  background: rgba(11, 11, 11, 0.85);
+  transition: transform 220ms ease;
+  font-family: "Orpheus Pro", "Orpheus-Pro", "Nanum Myeongjo", serif;
+}
+
+.site-header.hidden {
+  transform: translateY(-100%);
+}
+
+.header-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 64px 0;
+}
+
+.site-title {
+  color: var(--link);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: clamp(18px, 3.2vw, 24px);
+  letter-spacing: 0.2px;
+}
+
+.site-nav {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.nav-link {
+  color: var(--link-muted);
+  text-decoration: none;
+  font-size: 18px;
+  font-weight: 600;
+  padding: 6px 2px;
+  border-radius: 4px;
+  transition: color 160ms ease-in-out, background-color 160ms ease-in-out;
+}
+
+.nav-link:hover,
+.nav-link:focus {
+  color: var(--link);
+  outline: none;
+  /* text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px; */
+}
+
+.nav-link.active {
+  color: var(--link);
+}
+
+/* Photo feed */
+.photo-feed {
+  padding: 0 0 0;
+}
+
+.photo-section {
+  min-height: 80vh;
+  display: grid;
+  align-content: center;
+  padding: 40px 0;
+  /* border-bottom: 1px solid var(--border); */
+}
+
+.photo-card {
+  margin: 0;
+}
+
+.photo {
+  width: 100%;
+  height: auto;
+  max-height: 70vh;
+  display: block;
+  /* border-radius: 8px; */
+  box-shadow: 0 10px 30px var(--shadow);
+  background: #111;
+  object-fit: contain;
+}
+
+.photo-caption {
+  margin-top: 24px;
+  color: var(--text);
+  line-height: 1.45;
+}
+
+.photo-caption .location {
+  font-size: clamp(20px, 3vw, 34px);
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.photo-caption .date {
+  margin-top: 8px;
+  font-size: clamp(16px, 2.2vw, 18px);
+  color: var(--muted);
+}
+
+/* Footer */
+.site-footer {
+  /* border-top: 1px solid var(--border); */
+  padding: 100px 0 40px;
+  color: var(--muted);
+  font-size: 14px;
+  font-family: "Orpheus Pro", "Orpheus-Pro", "Nanum Myeongjo", serif;
+}
+
+/* Accessibility helpers */
+a:focus-visible {
+  outline: 2px dashed #888;
+  outline-offset: 3px;
+}
+
+/* Caption row with optional local-script (Chinese) label */
+.caption-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.caption-row .local-script {
+  margin-left: auto;
+  font-family: "Noto Serif SC", "Noto Serif CJK JP", "Noto Serif CJK SC", "Songti SC", serif;
+  font-size: clamp(16px, 2.6vw, 22px);
+  font-weight: 300; /* Supported thin weight for Noto Serif SC */
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  line-height: 1.2;
+}
+
+.photo-caption .date {
+  margin-top: 8px;
+  font-size: clamp(16px, 2.2vw, 18px);
+  color: var(--muted);
+  font-family: "Orpheus Pro", "Orpheus-Pro", "Nanum Myeongjo", serif;
+}
+
+/* Links on hero photos (homepage) */
+.photo-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+.photo-link:visited,
+.photo-link:hover,
+.photo-link:active,
+.photo-link:focus {
+  text-decoration: none;
+  color: inherit;
+}
+.photo-link .photo {
+  cursor: zoom-in;
+}
+
+/* Masonry layout for collection pages */
+.masonry {
+  column-gap: 16px;
+  column-count: 1;
+  padding: 24px 0 64px;
+}
+@media (min-width: 640px) {
+  .masonry {
+    column-count: 2;
+  }
+}
+@media (min-width: 1024px) {
+  .masonry {
+    column-count: 3;
+  }
+}
+.masonry-item {
+  break-inside: avoid;
+  margin-bottom: 16px;
+  display: block;
+}
+.masonry-item img {
+  width: 100%;
+  height: auto;
+  display: block;
+  box-shadow: 0 6px 22px var(--shadow);
+  background: #111;
+}
+
+/* Justified (row-based) layout for balanced visual scale */
+.justified {
+  padding: 8px 0 64px;
+}
+.justified-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.justified-item {
+  display: block;
+}
+.justified-item img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  box-shadow: 0 6px 22px var(--shadow);
+  background: #111;
+}
+
+/* Responsive stacking on small screens for readability */
+@media (max-width: 760px) {
+  .justified-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .justified-item {
+    width: 100% !important;
+    height: auto !important;
+  }
+  .justified-item img {
+    height: auto;
+    object-fit: contain;
+  }
+}
+
+/* Lightbox */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.92);
+  z-index: 1000;
+}
+.lightbox.open {
+  display: flex;
+}
+.lightbox img {
+  max-width: 96vw;
+  max-height: 92vh;
+  box-shadow: 0 10px 32px rgba(0,0,0,0.7);
+  background: #000;
+}
+.lightbox .close {
+  position: absolute;
+  top: 16px;
+  right: 20px;
+  color: #eee;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+  user-select: none;
+  font-family: "Orpheus Pro", "Orpheus-Pro", "Nanum Myeongjo", serif;
+}
+.lightbox .nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #eee;
+  font-size: 36px;
+  line-height: 1;
+  cursor: pointer;
+  user-select: none;
+  padding: 12px;
+  background: rgba(0,0,0,0.25);
+  border-radius: 6px;
+}
+.lightbox .prev { left: 16px; }
+.lightbox .next { right: 16px; }
+
+/* Small screens tweaks */
+@media (max-width: 420px) {
+  .header-container {
+    padding: 12px 0;
+  }
+  .site-nav {
+    gap: 14px;
+  }
+  .caption-row .local-script {
+    flex-basis: 100%;
+    margin-left: 0;
+    text-align: left;
+    margin-top: 6px;
+  }
+}
+
+
